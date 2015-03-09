@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>jstree parent_force_select demos</title>
+	<style>
+	html { margin:0; padding:0; font-size:62.5%; }
+	body { max-width:800px; min-width:300px; margin:0 auto; padding:20px 10px; font-size:14px; font-size:1.4em; }
+	h1 { font-size:1.8em; }
+	.demo { overflow:auto; border:1px solid silver; min-height:100px; }
+	</style>
+	<link rel="stylesheet" href="./../../dist/themes/default/style.min.css" />
+</head>
+<body>
+	<h1>HTML demo</h1>
+	<div id="container">
+    <ul>
+        <li data-jstree='{"opened":true}'>Root node
+            <ul>
+                <li>Child node 1</li>
+                <li>Child node 2</li>
+                <li data-jstree='{"opened":true}'>Child node 3
+                    <ul>
+                        <li project="true">aaaaaaa</li>
+                        <li>bbbbbbbbb</li>
+                    </ul>
+                </li>
+                <li>Child node 4</li>
+            </ul>
+        </li>
+    </ul>
+	</div>
+
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script src="./../../src/jstree.js"></script>
+	<script src="./../../src/jstree.checkbox.js"></script>
+	
+	<script>
+        $('#container').on("loaded.jstree", function(e, data) {
+        	data.instance.get_container().find('> ul > li > a > i:first').removeClass("jstree-icon jstree-checkbox");
+            data.instance.get_container().find('li').each(function(i) {
+                if($(this).attr("project") === "true") {
+                    data.instance.check_node($(this));
+                }
+            });
+        }).jstree({
+            "checkbox" : {
+                "whole_node" : false,
+                "three_state" : false,
+                "cascade" : "down",
+                "tie_selection" : false,
+                "parent_force_select": true,
+                "can_deselect_node": function (data) {
+                	return this.li_attr.project !== "true";
+                },
+                "deselect_node_attr_query" : "project!='true'"
+            },
+            "plugins" : ["checkbox", "types"]
+        });
+	</script>
+</body>
+</html>

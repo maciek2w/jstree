@@ -9,3 +9,5 @@
 /libs
 /docs
 /dist/libs
+.settings
+.project

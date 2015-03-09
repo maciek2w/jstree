@@ -67,7 +67,13 @@
 		 * @name $.jstree.defaults.checkbox.tie_selection
 		 * @plugin checkbox
 		 */
-		tie_selection		: true
+		tie_selection		: true,
+		/**
+		 * This setting controls if checkbox can be unselected if parent node has checkbox selected
+		 * @name $.jstree.defaults.checkbox.tie_selection
+		 * @plugin checkbox
+		 */
+		parent_force_select: false
 	};
 	$.jstree.plugins.checkbox = function (options, parent) {
 		this.bind = function () {
@@ -106,7 +112,9 @@
 							dpc = data.nodes,
 							i, j;
 						for(i = 0, j = dpc.length; i < j; i++) {
-							m[dpc[i]].state.checked = (m[dpc[i]].original && m[dpc[i]].original.state && m[dpc[i]].original.state.checked);
+    						if (m[dpc[i]].original) {
+    						  m[dpc[i]].state.checked = (m[dpc[i]].original && m[dpc[i]].original.state && m[dpc[i]].original.state.checked);
+							}
 							if(m[dpc[i]].state.checked) {
 								this._data.checkbox.selected.push(dpc[i]);
 							}
@@ -236,6 +244,7 @@
 							var obj = data.node,
 								dom = this.get_node(obj, true),
 								i, j, tmp, s = this.settings.checkbox.cascade, t = this.settings.checkbox.tie_selection;
+
 							if(obj && obj.original && obj.original.state && obj.original.state.undetermined) {
 								obj.original.state.undetermined = false;
 							}
@@ -244,6 +253,14 @@
 							if(s.indexOf('down') !== -1) {
 								for(i = 0, j = obj.children_d.length; i < j; i++) {
 									tmp = this._model.data[obj.children_d[i]];
+                                    
+									if (this.settings.checkbox.can_deselect_node) {
+									    dom = this.get_node(obj, true);
+									    if (!this.settings.checkbox.can_deselect_node.call(this, tmp, dom)) {
+                                            continue;
+                                        }
+                                    }
+									
 									tmp.state[ t ? 'selected' : 'checked' ] = false;
 									if(tmp && tmp.original && tmp.original.state && tmp.original.state.undetermined) {
 										tmp.original.state.undetermined = false;
@@ -279,7 +296,25 @@
 
 							// apply down (process .children separately?)
 							if(s.indexOf('down') !== -1 && dom.length) {
-								dom.find('.jstree-anchor').removeClass(t ? 'jstree-clicked' : 'jstree-checked').parent().attr('aria-selected', false);
+							    
+							    if(this.settings.checkbox.deselect_node_attr_query) {
+							        var query = 'li[' + this.settings.checkbox.deselect_node_attr_query + ']';   //'li[remote_checked!=true]'
+							        
+							        //FIXME: poor performance: O(n2)
+							        dom.find('.jstree-anchor').each(function (i, elem) {
+                                        var par = $(elem).parents(query);
+                                        
+                                        //no parent matches 'query'
+                                        if(par.length === 0) {
+                                            $(elem).removeClass(t ? 'jstree-clicked' : 'jstree-checked').parent().attr('aria-selected', false);
+                                        }
+                                    });
+							    }
+							    else {
+							        dom.find('.jstree-anchor').removeClass(t ? 'jstree-clicked' : 'jstree-checked').parent().attr('aria-selected', false);
+							    }
+							    
+								
 							}
 						}, this));
 			}
@@ -560,7 +595,15 @@
 				return false;
 			}
 			dom = this.get_node(obj, true);
+			
 			if(obj.state.checked) {
+			    if(this.settings.checkbox.parent_force_select) { 
+                    var par = this.get_node(obj.parent);
+                    if(par.state.checked) {
+                        return false;
+                    }
+                }
+                
 				obj.state.checked = false;
 				this._data.checkbox.selected = $.vakata.array_remove_item(this._data.checkbox.selected, obj.id);
 				if(dom.length) {
